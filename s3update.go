@@ -118,15 +118,26 @@ func runAutoUpdate(u Updater) error {
 		if err != nil {
 			return err
 		}
-		dir, err := osext.Executable()
+		dest, err := osext.Executable()
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("s3update: downloading new version to %s\n", dir)
-		if err := ioutil.WriteFile(dir, data, 0755); err != nil {
+		// Move the old version to a backup path that we can recover from
+		// in case the upgrade fails
+		destBackup := dest + ".bak"
+		if _, err := os.Stat(dest); err == nil {
+			os.Rename(dest, destBackup)
+		}
+
+		fmt.Printf("s3update: downloading new version to %s\n", dest)
+		if err := ioutil.WriteFile(dest, data, 0755); err != nil {
+			os.Rename(destBackup, dest)
 			return err
 		}
+
+		// Removing backup
+		os.Remove(destBackup)
 
 		fmt.Printf("s3update: updated with success to version %d\n", remoteVersion)
 		os.Exit(1)
