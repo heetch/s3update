@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -59,20 +60,18 @@ func (u Updater) validate() error {
 // AutoUpdate runs synchronously a verification to ensure the binary is up-to-date.
 // If a new version gets released, the download will happen automatically
 // It's possible to bypass this mechanism by setting the S3UPDATE_DISABLED environment variable.
-func AutoUpdate(u Updater) {
+func AutoUpdate(u Updater) error {
 	if os.Getenv("S3UPDATE_DISABLED") != "" {
 		fmt.Println("s3update: autoupdate disabled")
-		return
+		return nil
 	}
 
 	if err := u.validate(); err != nil {
 		fmt.Printf("s3update: %s - skipping auto update\n", err.Error())
-		return
+		return err
 	}
 
-	if err := runAutoUpdate(u); err != nil {
-		fmt.Printf("s3update: ERROR: %s\n", err.Error())
-	}
+	return runAutoUpdate(u)
 }
 
 // generateS3ReleaseKey dynamically builds the S3 key depending on the os and architecture.
@@ -152,8 +151,18 @@ func runAutoUpdate(u Updater) error {
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
-			return err
+			// If the command fails to run or doesn't complete successfully, the
+			// error is of type *ExitError. Other error types may be
+			// returned for I/O problems.
+			if exiterr, ok := err.(*exec.ExitError); ok {
+				// The command didn't complete correctly.
+				// Exiting while keeping the status code.
+				os.Exit(exiterr.Sys().(syscall.WaitStatus).ExitStatus())
+			} else {
+				return err
+			}
 		}
+
 		os.Exit(0)
 	}
 
