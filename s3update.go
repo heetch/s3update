@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/kardianos/osext"
+	"github.com/mitchellh/ioprogress"
 )
 
 type Updater struct {
@@ -114,7 +116,17 @@ func runAutoUpdate(u Updater) error {
 			return err
 		}
 		defer resp.Body.Close()
-		data, err := ioutil.ReadAll(resp.Body)
+		progressR := &ioprogress.Reader{
+			Reader:       resp.Body,
+			Size:         *resp.ContentLength,
+			DrawInterval: 500 * time.Millisecond,
+			DrawFunc: ioprogress.DrawTerminalf(os.Stdout, func(progress, total int64) string {
+				bar := ioprogress.DrawTextFormatBar(40)
+				return fmt.Sprintf("%s %20s", bar(progress, total), ioprogress.DrawTextFormatBytes(progress, total))
+			}),
+		}
+
+		data, err := ioutil.ReadAll(progressR)
 		if err != nil {
 			return err
 		}
