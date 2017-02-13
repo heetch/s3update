@@ -23,7 +23,7 @@ mybucket/
 ## Usage
 
 Updates are easier to deal with when done through a continuous integration platform. We're using CircleCI but the following
-excerpt can easilly be adapted to whichever solution being used.
+excerpt can easily be adapted to whichever solution being used.
 
 ### CircleCI
 
@@ -51,18 +51,22 @@ import (
 )
 
 var (
-	// This gets set during the compilation. See bellow
+	// This gets set during the compilation. See below.
 	Version = ""
 )
 
 func main() {
-	s3update.AutoUpdate(s3update.Updater{
+	err := s3update.AutoUpdate(s3update.Updater{
 		CurrentVersion: Version,
 		S3Bucket:       "mybucket",
 		S3Region:       "eu-west-1",
 		S3ReleaseKey:   "mytool/mytool-{{OS}}-{{ARCH}}",
 		S3VersionKey:   "mytool/VERSION",
 	})
+
+  if err != nil {
+    // ...
+  }
 
   ...
 }
