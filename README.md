@@ -1,6 +1,6 @@
 # s3update
 
-__Enable your Golang applications to self update with S3.__
+__Enable your Golang applications to self update with S3. Requires Go 1.8+__
 
 This package enables our internal tools to be updated when new commits to their master branch are pushed to Github.
 
