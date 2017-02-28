@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/kardianos/osext"
 	"github.com/mitchellh/ioprogress"
 )
 
@@ -130,7 +129,7 @@ func runAutoUpdate(u Updater) error {
 		if err != nil {
 			return err
 		}
-		dest, err := osext.Executable()
+		dest, err := os.Executable()
 		if err != nil {
 			return err
 		}
