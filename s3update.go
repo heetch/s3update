@@ -2,6 +2,7 @@ package s3update
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -125,10 +126,6 @@ func runAutoUpdate(u Updater) error {
 			}),
 		}
 
-		data, err := ioutil.ReadAll(progressR)
-		if err != nil {
-			return err
-		}
 		dest, err := os.Executable()
 		if err != nil {
 			return err
@@ -141,11 +138,21 @@ func runAutoUpdate(u Updater) error {
 			os.Rename(dest, destBackup)
 		}
 
-		fmt.Printf("s3update: downloading new version to %s\n", dest)
-		if err := ioutil.WriteFile(dest, data, 0755); err != nil {
+		// Use the same flags that ioutil.WriteFile uses
+		f, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
 			os.Rename(destBackup, dest)
 			return err
 		}
+		defer f.Close()
+
+		fmt.Printf("s3update: downloading new version to %s\n", dest)
+		if _, err := io.Copy(f, progressR); err != nil {
+			os.Rename(destBackup, dest)
+			return err
+		}
+		// The file must be closed already so we can execute it in the next step
+		f.Close()
 
 		// Removing backup
 		os.Remove(destBackup)
