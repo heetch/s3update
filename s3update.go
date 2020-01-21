@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
@@ -160,25 +159,8 @@ func runAutoUpdate(u Updater) error {
 		fmt.Printf("s3update: updated with success to version %d\nRestarting application\n", remoteVersion)
 
 		// The update completed, we can now restart the application without requiring any user action.
-		var args []string
-		if len(os.Args) > 1 {
-			args = os.Args[1:]
-		}
-		cmd := exec.Command(os.Args[0], args...)
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
-		if err := cmd.Run(); err != nil {
-			// If the command fails to run or doesn't complete successfully, the
-			// error is of type *ExitError. Other error types may be
-			// returned for I/O problems.
-			if exiterr, ok := err.(*exec.ExitError); ok {
-				// The command didn't complete correctly.
-				// Exiting while keeping the status code.
-				os.Exit(exiterr.Sys().(syscall.WaitStatus).ExitStatus())
-			} else {
-				return err
-			}
+		if err := syscall.Exec(os.Args[0], os.Args, os.Environ()); err != nil {
+			return err
 		}
 
 		os.Exit(0)
