@@ -159,7 +159,7 @@ func runAutoUpdate(u Updater) error {
 		fmt.Printf("s3update: updated with success to version %d\nRestarting application\n", remoteVersion)
 
 		// The update completed, we can now restart the application without requiring any user action.
-		if err := syscall.Exec(os.Args[0], os.Args, os.Environ()); err != nil {
+		if err := syscall.Exec(dest, os.Args, os.Environ()); err != nil {
 			return err
 		}
 
