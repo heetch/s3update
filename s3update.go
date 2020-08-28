@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/mitchellh/ioprogress"
@@ -31,6 +32,8 @@ type Updater struct {
 	S3ReleaseKey string
 	// S3VersionKey represents the key on S3 to download the current version
 	S3VersionKey string
+	// AWSCredentials represents the config to use to connect to s3
+	AWSCredentials *credentials.Credentials
 }
 
 // validate ensures every required fields is correctly set. Otherwise and error is returned.
@@ -89,7 +92,11 @@ func runAutoUpdate(u Updater) error {
 		return fmt.Errorf("invalid local version")
 	}
 
-	svc := s3.New(session.New(), &aws.Config{Region: aws.String(u.S3Region)})
+	svc := s3.New(session.New(), &aws.Config{
+		Region:      aws.String(u.S3Region),
+		Credentials: u.AWSCredentials,
+	})
+
 	resp, err := svc.GetObject(&s3.GetObjectInput{Bucket: aws.String(u.S3Bucket), Key: aws.String(u.S3VersionKey)})
 	if err != nil {
 		return err
