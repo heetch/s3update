@@ -31,6 +31,8 @@ type Updater struct {
 	S3ReleaseKey string
 	// S3VersionKey represents the key on S3 to download the current version
 	S3VersionKey string
+	// AWSConfig represents the config to use to connect to s3
+	AWSConfig *aws.Config
 }
 
 // validate ensures every required fields is correctly set. Otherwise and error is returned.
@@ -89,7 +91,11 @@ func runAutoUpdate(u Updater) error {
 		return fmt.Errorf("invalid local version")
 	}
 
-	svc := s3.New(session.New(), &aws.Config{Region: aws.String(u.S3Region)})
+	if u.AWSConfig == nil {
+		u.AWSConfig = &aws.Config{Region: aws.String(u.S3Region)}
+	}
+	svc := s3.New(session.New(), u.AWSConfig)
+
 	resp, err := svc.GetObject(&s3.GetObjectInput{Bucket: aws.String(u.S3Bucket), Key: aws.String(u.S3VersionKey)})
 	if err != nil {
 		return err
